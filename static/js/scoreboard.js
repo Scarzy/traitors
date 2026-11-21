@@ -21,6 +21,7 @@ var get_scores = function() {
 						row.insertCell(0).innerHTML = i
 						row.insertCell(1).innerHTML = score["name"]
 						row.insertCell(2).innerHTML = score["score"]
+						row.classList.add("text-light")
 						break;
 				}
 			}
