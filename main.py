@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import math
 import json
 import yaml
 import asyncio
@@ -31,9 +32,37 @@ def make_app():
         (r"/users", UsersHandler),
         (r"/users/([0-9+])", UsersHandler),
         (r"/action/([0-9+])", ActionHandler),
+        (r"/majoraction", MajorActionHandler),
+        (r"/thresholds", ThresholdHandler),
         (r'/(.*\..*)', tornado.web.StaticFileHandler, {'path': "static"}),
         ],
         **settings)
+
+def get_count_thresholds():
+    user,password = load_mysql_creds()
+    conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM christmasawake2026")
+    res = cursor.fetchall()
+    totalentries = len(res)
+    
+    user,password = load_mysql_creds()
+    conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM christmasawake2026 WHERE role='traitor'")
+    res = cursor.fetchall()
+    traitorentries = len(res)
+    
+    murderthreshold = math.ceil(2/3 * traitorentries)
+    recruitthreshold = math.ceil(2/3 * traitorentries)
+    banishthreshold = math.ceil(1/3 * totalentries)
+
+    return {"murderthreshold": murderthreshold, "recruitthreshold": recruitthreshold, "banishthreshold": banishthreshold}
+
+def get_scores():
+    return {"murder": -100,
+            "banish": -100,
+            }
 
 class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
@@ -61,7 +90,7 @@ class ScoresHandler(BaseHandler):
         user,password = load_mysql_creds()
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
-        cursor.execute("SELECT name,score FROM christmasawake2026")
+        cursor.execute("SELECT name,score FROM christmasawake2026 ORDER BY score DESC")
         res = cursor.fetchall()
         keys = ["name", "score"]
         data = [dict(zip(keys, row)) for row in res]
@@ -113,9 +142,19 @@ class ActionHandler(BaseHandler):
             case "banish":
                 column = action + column
                 pass
+            case "score":
+                score = tornado.escape.json_decode(self.request.body)["score"]
+                user,password = load_mysql_creds()
+                conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+                cursor = conn.cursor()
+                cursor.execute("UPDATE christmasawake2026 SET score = score + {1} WHERE id={0}".format(slug,score))
+                conn.commit()
+                self.write("{}")
+                return
             case _:
                 self.set_status(400)
-                self.write("Action unknown")
+                self.write("Action unknown {}".format(action))
+                return
         user,password = load_mysql_creds()
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
@@ -123,9 +162,45 @@ class ActionHandler(BaseHandler):
         conn.commit()
         self.write("{}")
 
+class MajorActionHandler(BaseHandler):
+    def put(self):
+        action = tornado.escape.json_decode(self.request.body)["action"]
+        match(action):
+            case "dayturnover":
+                user,password = load_mysql_creds()
+                conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+                cursor = conn.cursor()
+                cursor.execute("SELECT id,name,score,murdercount,recruitcount,banishcount FROM christmasawake2026")
+                res = cursor.fetchall()
+                keys = ["id","name","score","murdercount","recruitcount","banishcount"]
+                data = [dict(zip(keys, row)) for row in res]
+                thresholds = get_count_thresholds()
+                scores = get_scores()
+                for user in data:
+                    if user["murdercount"] >= thresholds["murderthreshold"]:
+                        cursor.execute("UPDATE christmasawake2026 SET score = score + {1} WHERE id={0}".format(user["id"],scores["murder"]))
+                        conn.commit()
+                    if user["banishcount"] >= thresholds["banishthreshold"]:
+                        cursor.execute("UPDATE christmasawake2026 SET score = score + {1} WHERE id={0}".format(user["id"],scores["banish"]))
+                        conn.commit()
+                    if user["recruitcount"] >= thresholds["recruitthreshold"]:
+                        cursor.execute("UPDATE christmasawake2026 SET role='traitor' WHERE id={0}".format(user["id"]))
+                        conn.commit()
+                    cursor.execute("UPDATE christmasawake2026 SET murdercount=0,banishcount=0,recruitcount=0 WHERE id={0}".format(user["id"]))
+                    conn.commit()
+                self.write("{}")
+            case _:
+                self.set_status(400)
+                self.write("Action unknown")
+
 class UserPageHandler(BaseHandler):
     def get(self):
         self.render("static/html/users.html")
+
+class ThresholdHandler(BaseHandler):
+    def get(self):
+        data = get_count_thresholds()
+        self.write(json.dumps(data))
 
 
 async def main():

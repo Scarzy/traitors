@@ -10,7 +10,7 @@
 			.border-bronze {background-color: #CD7F32 !important;}
 		</style>
 	</head>
-	<body class="text-center" onload="get_scores()" style="background-color:4f0518">
+	<body class="text-center" onload="get_scores(); get_thresholds(); start_timers()" style="background-color:4f0518">
 		<main class="
 			container-fluid
 			px-md-4
@@ -60,6 +60,21 @@
             </tr>
           </thead>
           <tbody id="fullscorestable">
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-sm text-light">
+          <tbody>
+            <tr class="text-light">
+		<td class="col-1 text-end">Votes required to banish:</td>
+                <td class="col-1 text-start" id="banishthreshold">10</td>
+                <td class="col-1 text-end">Votes required to murder:</td>
+                <td class="col-1 text-start" id="murderthreshold">10</td>
+                <td class="col-1 text-end">Votes required to recruit:</td>
+                <td class="col-1 text-start" id="recruitthreshold">10</td>
+            </tr>
           </tbody>
         </table>
       </div>

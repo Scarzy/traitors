@@ -9,7 +9,7 @@
 			.border-bronze {background-color: #CD7F32 !important;}
 		</style>
 	</head>
-	<body class="text-center" onload="get_users()" style="background-color:4f0518">
+	<body class="text-center" onload="get_users(); add_major_action_listeners()" style="background-color:4f0518">
 		<main class="
 			container-fluid
 			px-md-4
@@ -28,6 +28,7 @@
 		    </tbody>
 		  </table>
 		</div>
+		<button type="button" class="btn btn-danger" id="dayturnover">Roll the day</button>
 		</main>
 	</body>
 </html>
