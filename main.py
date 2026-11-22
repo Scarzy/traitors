@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import yaml
 import asyncio
 import tornado
@@ -28,6 +29,8 @@ def make_app():
         (r"/scores", ScoresHandler),
         (r"/manage", UserPageHandler),
         (r"/users", UsersHandler),
+        (r"/users/([0-9+])", UsersHandler),
+        (r"/action/([0-9+])", ActionHandler),
         (r'/(.*\..*)', tornado.web.StaticFileHandler, {'path': "static"}),
         ],
         **settings)
@@ -60,8 +63,9 @@ class ScoresHandler(BaseHandler):
         cursor = conn.cursor()
         cursor.execute("SELECT name,score FROM christmasawake2026")
         res = cursor.fetchall()
-        print(res)
-        self.write('[{"name":"steve", "score":55555},{"name":"stew", "score":4444},{"name":"stevie", "score":333},{"name":"stephen", "score":22},{"name":"steven", "score":1}]')
+        keys = ["name", "score"]
+        data = [dict(zip(keys, row)) for row in res]
+        self.write(json.dumps(data))
 
 class ScoreboardHandler(BaseHandler):
     def get(self):
@@ -72,10 +76,52 @@ class UsersHandler(BaseHandler):
         user,password = load_mysql_creds()
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
-        cursor.execute("SELECT name,role FROM christmasawake2026")
+        cursor.execute("SELECT id,name,role FROM christmasawake2026")
         res = cursor.fetchall()
-        print(res)
-        self.write('[{"name":"steve", "score":55555},{"name":"stew", "score":4444},{"name":"stevie", "score":333},{"name":"stephen", "score":22},{"name":"steven", "score":1}]')
+        keys = ["id", "name", "role"]
+        data = [dict(zip(keys, row)) for row in res]
+        self.write(json.dumps(data))
+
+    def patch(self, slug):
+        role = tornado.escape.json_decode(self.request.body)["role"]
+        match(role):
+            case "traitor":
+                pass
+            case "faithful":
+                pass
+            case _:
+                self.set_status(400)
+                self.write("Role unknown")
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE christmasawake2026 SET role='{1}' WHERE id={0}".format(slug,role))
+        conn.commit()
+        self.write("{}")
+
+class ActionHandler(BaseHandler):
+    def patch(self, slug):
+        action = tornado.escape.json_decode(self.request.body)["action"]
+        column = "count"
+        match(action):
+            case "murder":
+                column = action + column
+                pass
+            case "recruit":
+                column = action + column
+                pass
+            case "banish":
+                column = action + column
+                pass
+            case _:
+                self.set_status(400)
+                self.write("Action unknown")
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE christmasawake2026 SET {1} = {1} + 1 WHERE id={0}".format(slug,column))
+        conn.commit()
+        self.write("{}")
 
 class UserPageHandler(BaseHandler):
     def get(self):
