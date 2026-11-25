@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
+import os
+import uuid
 import math
 import json
 import yaml
+import random
 import asyncio
 import tornado
+import datetime
 import mysql.connector as mysql
 
 def load_mysql_creds():
@@ -23,6 +27,7 @@ def make_app():
             "cookie_secret": "dFizkvPwQQsZeM2twrYIo96IGFBytn9Mm0QHv7WizULfCE43JVEf0HZpSADkSq0rjMaaThQbpBWY3oRmy9OQLg=="
             }
     return tornado.web.Application([
+        (r"/(favicon\.ico)",tornado.web.StaticFileHandler,{"path": os.path.join(os.path.dirname(__file__),"static","images"), "default_filename": "favicon.ico"}),
         (r"/", ScoreboardHandler),
         (r"/login", LoginHandler),
         (r"/scorer", ScorerHandler),
@@ -34,6 +39,7 @@ def make_app():
         (r"/action/([0-9+])", ActionHandler),
         (r"/majoraction", MajorActionHandler),
         (r"/thresholds", ThresholdHandler),
+        (r"/votingtime", VotingTimeHandler),
         (r'/(.*\..*)', tornado.web.StaticFileHandler, {'path': "static"}),
         ],
         **settings)
@@ -66,7 +72,22 @@ def get_scores():
 
 class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
-        return self.get_signed_cookie("user")
+        return self.get_signed_cookie("uuid") and self.get_signed_cookie("user")
+
+class AdminHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        if not self.get_signed_cookie("uuid") or not self.get_signed_cookie("user"):
+            return False
+        valid = False
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE admin=TRUE AND name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
+        if len(cursor.fetchall()) == 1:
+            return True
+        elif self.get_signed_cookie("uuid") and self.get_signed_cookie("user"):
+            self.redirect("/")
+        return False
 
 class IndexHandler(BaseHandler):
     def get(self):
@@ -77,7 +98,15 @@ class LoginHandler(BaseHandler):
         self.render("static/html/login.html")
     
     def post(self):
+        uuid_str = str(uuid.uuid4())
+        role = random.choices(["faithful","traitor"], weights=[86,14])[0] 
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO christmasawake2026 (name,uid,role) VALUES ('{0}','{1}','{2}') ON DUPLICATE KEY UPDATE name = VALUES(name)".format(self.get_argument("name"),uuid_str, role))
+        conn.commit()
         self.set_signed_cookie("user",self.get_argument("name"))
+        self.set_signed_cookie("uuid",uuid_str)
         self.redirect("/")
 
 class ScorerHandler(BaseHandler):
@@ -170,9 +199,9 @@ class MajorActionHandler(BaseHandler):
                 user,password = load_mysql_creds()
                 conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
                 cursor = conn.cursor()
-                cursor.execute("SELECT id,name,score,murdercount,recruitcount,banishcount FROM christmasawake2026")
+                cursor.execute("SELECT id,role,name,score,murdercount,recruitcount,banishcount FROM christmasawake2026")
                 res = cursor.fetchall()
-                keys = ["id","name","score","murdercount","recruitcount","banishcount"]
+                keys = ["id","role","name","score","murdercount","recruitcount","banishcount"]
                 data = [dict(zip(keys, row)) for row in res]
                 thresholds = get_count_thresholds()
                 scores = get_scores()
@@ -188,12 +217,17 @@ class MajorActionHandler(BaseHandler):
                         conn.commit()
                     cursor.execute("UPDATE christmasawake2026 SET murdercount=0,banishcount=0,recruitcount=0 WHERE id={0}".format(user["id"]))
                     conn.commit()
+                cursor.execute("UPDATE christmasawake2026 SET murdervotes = 1 WHERE role='traitor'")
+                conn.commit()
+                cursor.execute("UPDATE christmasawake2026 SET banishvotes = 1")
+                conn.commit()
                 self.write("{}")
             case _:
                 self.set_status(400)
                 self.write("Action unknown")
 
-class UserPageHandler(BaseHandler):
+class UserPageHandler(AdminHandler):
+    @tornado.web.authenticated
     def get(self):
         self.render("static/html/users.html")
 
@@ -202,10 +236,66 @@ class ThresholdHandler(BaseHandler):
         data = get_count_thresholds()
         self.write(json.dumps(data))
 
+class VotingTimeHandler(BaseHandler):
+    def is_voting_valid(self):
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("SELECT murdervotes,banishvotes FROM christmasawake2026 WHERE name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
+        res = cursor.fetchall()[0]
+        now = datetime.datetime.now().minute
+        return now >= 55 and now < 60 and (res[0] > 0 or res[1] > 0)
+    
+    @tornado.web.authenticated
+    def get(self):
+        data = {"vote": self.is_voting_valid()}
+        self.write(json.dumps(data))
+    
+    @tornado.web.authenticated
+    def put(self):
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        action = tornado.escape.json_decode(self.request.body)["action"]
+        targetname = tornado.escape.json_decode(self.request.body)["targetname"]
+        targetuuid = tornado.escape.json_decode(self.request.body)["targetuuid"]
+        match(action):
+            case "murder":
+                #Check I am allowed to murder
+                #Check target exists
+                #Add 1 to target murdercount
+                # Same for banish
+                cursor.execute("SELECT id,role,name,score,murdercount,recruitcount,banishcount FROM christmasawake2026")
+                res = cursor.fetchall()
+                keys = ["id","role","name","score","murdercount","recruitcount","banishcount"]
+                data = [dict(zip(keys, row)) for row in res]
+                thresholds = get_count_thresholds()
+                scores = get_scores()
+                for user in data:
+                    if user["murdercount"] >= thresholds["murderthreshold"]:
+                        cursor.execute("UPDATE christmasawake2026 SET score = score + {1} WHERE id={0}".format(user["id"],scores["murder"]))
+                        conn.commit()
+                    if user["banishcount"] >= thresholds["banishthreshold"]:
+                        cursor.execute("UPDATE christmasawake2026 SET score = score + {1} WHERE id={0}".format(user["id"],scores["banish"]))
+                        conn.commit()
+                    if user["recruitcount"] >= thresholds["recruitthreshold"]:
+                        cursor.execute("UPDATE christmasawake2026 SET role='traitor' WHERE id={0}".format(user["id"]))
+                        conn.commit()
+                    cursor.execute("UPDATE christmasawake2026 SET murdercount=0,banishcount=0,recruitcount=0 WHERE id={0}".format(user["id"]))
+                    conn.commit()
+                cursor.execute("UPDATE christmasawake2026 SET murdervotes = 1 WHERE role='traitor'")
+                conn.commit()
+                cursor.execute("UPDATE christmasawake2026 SET banishvotes = 1")
+                conn.commit()
+                self.write("{}")
+            case _:
+                self.set_status(400)
+                self.write("Action unknown")
+
 
 async def main():
     app = make_app()
-    app.listen(8888)
+    app.listen(8888, address="127.0.0.1", xheaders=True, max_body_size=20*1024*1024)
     await asyncio.Event().wait()
 
 if __name__ == "__main__":

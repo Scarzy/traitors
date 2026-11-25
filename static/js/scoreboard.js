@@ -39,6 +39,7 @@ var get_scores = function() {
 var start_timers = function() {
 	setInterval(get_scores, 1000);
 	setInterval(get_thresholds, 1000);
+	setInterval(get_voting_valid, 1000);
 }
 
 var get_thresholds = function() {
@@ -48,6 +49,18 @@ var get_thresholds = function() {
 			document.getElementById("murderthreshold").textContent = out["murderthreshold"]
 			document.getElementById("recruitthreshold").textContent = out["recruitthreshold"]
 			document.getElementById("banishthreshold").textContent = out["banishthreshold"]
+		}
+	)
+	.catch(err => console.log(err))
+}
+
+var get_voting_valid = function() {
+	fetch("/votingtime")
+	.then(res => res.json())
+	.then(out => {
+			//document.getElementById("murderthreshold").textContent = out["murderthreshold"]
+			//document.getElementById("recruitthreshold").textContent = out["recruitthreshold"]
+			//document.getElementById("banishthreshold").textContent = out["banishthreshold"]
 		}
 	)
 	.catch(err => console.log(err))

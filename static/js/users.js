@@ -188,15 +188,21 @@ const insert_action_buttons = function (cell, index, user) {
 const get_users = function () {
 	fetch("/users")
 		.then(res => res.json())
-		.then(out => out.forEach(
-			function (user, i) {
-				const row = document.getElementById("userstable").insertRow(-1);
-				row.insertCell(0).innerHTML = user["name"];
-				insert_roles_buttons(row.insertCell(1), i, user);
-				insert_action_buttons(row.insertCell(2), i, user);
-				row.classList.add("text-light");
-			}
-		))
+		.then(out => {
+				const tbody = document.getElementById("userstable");
+				const fragment = document.createDocumentFragment();
+				out.forEach(
+					function (user, i) {
+						var row = document.createElement("tr");
+						row.insertCell(0).innerHTML = user["name"];
+						insert_roles_buttons(row.insertCell(1), i, user);
+						insert_action_buttons(row.insertCell(2), i, user);
+						row.classList.add("text-light");
+						fragment.appendChild(row);
+					}
+			)
+			tbody.replaceChildren(fragment);
+		})
 		.catch(err => console.log(err));
 };
 
