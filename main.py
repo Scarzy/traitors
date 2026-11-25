@@ -43,8 +43,10 @@ def make_app():
         (r"/scorer", ScorerHandler),
         (r"/scoreboard", ScoreboardHandler),
         (r"/scores", ScoresHandler),
-        (r"/manage", UserPageHandler),
+        (r"/manage", ManagePageHandler),
+        (r"/user", UserPageHandler),
         (r"/users", UsersHandler),
+        (r"/whoami", WhoAmIHandler),
         (r"/users/([0-9+])", UsersHandler),
         (r"/action/([0-9+])", ActionHandler),
         (r"/majoraction", MajorActionHandler),
@@ -139,7 +141,8 @@ class ScoreboardHandler(BaseHandler):
     def get(self):
         self.render("static/html/scoreboard.html")
 
-class UsersHandler(BaseHandler):
+class UsersHandler(AdminHandler):
+    @tornado.web.authenticated
     def get(self):
         user,password = load_mysql_creds()
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
@@ -150,6 +153,7 @@ class UsersHandler(BaseHandler):
         data = [dict(zip(keys, row)) for row in res]
         self.write(json.dumps(data))
 
+    @tornado.web.authenticated
     def patch(self, slug):
         role = tornado.escape.json_decode(self.request.body)["role"]
         match(role):
@@ -168,6 +172,7 @@ class UsersHandler(BaseHandler):
         self.write("{}")
 
 class ActionHandler(BaseHandler):
+    @tornado.web.authenticated
     def patch(self, slug):
         action = tornado.escape.json_decode(self.request.body)["action"]
         column = "count"
@@ -201,7 +206,8 @@ class ActionHandler(BaseHandler):
         conn.commit()
         self.write("{}")
 
-class MajorActionHandler(BaseHandler):
+class MajorActionHandler(AdminHandler):
+    @tornado.web.authenticated
     def put(self):
         action = tornado.escape.json_decode(self.request.body)["action"]
         match(action):
@@ -236,10 +242,15 @@ class MajorActionHandler(BaseHandler):
                 self.set_status(400)
                 self.write("Action unknown")
 
-class UserPageHandler(AdminHandler):
+class ManagePageHandler(AdminHandler):
     @tornado.web.authenticated
     def get(self):
         self.render("static/html/manage.html")
+
+class UserPageHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("static/html/user.html")
 
 class ThresholdHandler(BaseHandler):
     def get(self):
@@ -303,6 +314,18 @@ class VotingTimeHandler(BaseHandler):
             case _:
                 self.set_status(400)
                 self.write("Action unknown")
+
+class WhoAmIHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name,score,role FROM christmasawake2026 WHERE name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
+        res = cursor.fetchall()
+        keys = ["name", "score", "role"]
+        data = [dict(zip(keys, row)) for row in res]
+        self.write(json.dumps(data))
 
 
 async def main():
