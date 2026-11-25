@@ -239,7 +239,7 @@ class MajorActionHandler(BaseHandler):
 class UserPageHandler(AdminHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("static/html/users.html")
+        self.render("static/html/manage.html")
 
 class ThresholdHandler(BaseHandler):
     def get(self):
