@@ -52,6 +52,7 @@ def make_app():
         (r"/majoraction", MajorActionHandler),
         (r"/thresholds", ThresholdHandler),
         (r"/votingtime", VotingTimeHandler),
+        (r"/banish", BanishPageHandler),
         (r'/(.*\..*)', tornado.web.StaticFileHandler, {'path': "static"}),
         ],
         **settings)
@@ -253,6 +254,11 @@ class UserPageHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         self.render("static/html/user.html")
+
+class BanishPageHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("static/html/banish.html")
 
 class ThresholdHandler(BaseHandler):
     def get(self):
