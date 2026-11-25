@@ -121,7 +121,7 @@ class LoginHandler(BaseHandler):
         conn.commit()
         self.set_signed_cookie("user",self.get_argument("name"))
         self.set_signed_cookie("uuid",uuid_str)
-        self.redirect("/")
+        self.redirect("/user")
 
 class ScorerHandler(BaseHandler):
     @tornado.web.authenticated
