@@ -112,6 +112,8 @@ class LoginHandler(BaseHandler):
     def post(self):
         uuid_str = str(uuid.uuid4())
         role = random.choices(["faithful","traitor"], weights=[86,14])[0] 
+        if self.get_argument("not-traitor", default=None) == "not-traitor":
+            role = "faithful"
         user,password = load_mysql_creds()
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
