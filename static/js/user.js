@@ -12,15 +12,15 @@ var get_whoami = function() {
 
 var start_timers = function() {
 	setInterval(get_whoami, 60000);
+	setInterval(get_voting_valid, 1000);
 }
 
 var get_voting_valid = function() {
 	fetch("/votingtime")
 	.then(res => res.json())
 	.then(out => {
-			//document.getElementById("murderthreshold").textContent = out["murderthreshold"]
-			//document.getElementById("recruitthreshold").textContent = out["recruitthreshold"]
-			//document.getElementById("banishthreshold").textContent = out["banishthreshold"]
+			document.getElementById("murderoption").setAttribute("aria-disabled",(out["murderthreshold"] > 0) ? "true" : "false")
+			document.getElementById("banishoption").setAttribute("aria-disabled",(out["banishthreshold"] > 0) ? "true" : "false")
 		}
 	)
 	.catch(err => console.log(err))
