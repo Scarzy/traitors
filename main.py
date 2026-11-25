@@ -11,6 +11,15 @@ import tornado
 import datetime
 import mysql.connector as mysql
 
+def load_cookie_creds():
+    with open("creds.yaml") as stream:
+        try:
+            data = yaml.safe_load(stream)
+            cookie = data["cookiesecret"]
+        except:
+            print("Whoops...")
+    return cookie
+
 def load_mysql_creds():
     with open("creds.yaml") as stream:
         try:
@@ -22,9 +31,10 @@ def load_mysql_creds():
     return user,password
 
 def make_app():
+    cookiesecret = load_cookie_creds()
     settings = {
             "login_url": "/login",
-            "cookie_secret": "dFizkvPwQQsZeM2twrYIo96IGFBytn9Mm0QHv7WizULfCE43JVEf0HZpSADkSq0rjMaaThQbpBWY3oRmy9OQLg=="
+            "cookie_secret": cookiesecret
             }
     return tornado.web.Application([
         (r"/(favicon\.ico)",tornado.web.StaticFileHandler,{"path": os.path.join(os.path.dirname(__file__),"static","images"), "default_filename": "favicon.ico"}),
@@ -242,7 +252,9 @@ class VotingTimeHandler(BaseHandler):
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
         cursor.execute("SELECT murdervotes,banishvotes FROM christmasawake2026 WHERE name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
-        res = cursor.fetchall()[0]
+        res = cursor.fetchall()
+        if len(res) == 0:
+            res = (0, 0)
         now = datetime.datetime.now().minute
         return now >= 55 and now < 60 and (res[0] > 0 or res[1] > 0)
     
