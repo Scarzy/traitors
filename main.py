@@ -92,14 +92,14 @@ def get_scores():
 class PageHandler(tornado.web.RequestHandler):
     @property
     def is_traitor(self):
-        user_cookie = self.get_signed_cookie("user").decode("utf-8")
-        uuid_cookie = self.get_signed_cookie("uuid").decode("utf-8")
+        user_cookie = self.get_signed_cookie("user")
+        uuid_cookie = self.get_signed_cookie("uuid")
         if not user_cookie or not uuid_cookie:
             return False
         user,password = load_mysql_creds()
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
-        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE role='traitor' AND name='{0}' AND uid='{1}'".format(user_cookie, uuid_cookie))
+        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE role='traitor' AND name='{0}' AND uid='{1}'".format(user_cookie.decode("utf-8"), uuid_cookie.decode("utf-8")))
         if len(cursor.fetchall()) == 1:
             return True
         return False
