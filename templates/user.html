@@ -2,39 +2,50 @@
 
 {% block head %}
 <script src="/js/user.js"></script>
-		<style>
-			/* Keep default look on hover and focus */
-			.btn-press-only:hover,
-			.btn-press-only:focus,
-			.btn-press-only:focus-visible {
-			  background-color: var(--bs-btn-bg);
-			  border-color: var(--bs-btn-border-color);
-			  color: var(--bs-btn-color);
-			  box-shadow: none;
-			}
-			
-			/* Change only while actively pressing down */
-			.btn-press-only:active {
-			  background-color: var(--bs-danger);
-			  border-color: var(--bs-danger);
-			  color: var(--bs-white);
-			  transform: scale(0.98);
-			}
-			/* Hide active text by default */
-			.btn-press-text .text-active {
-			  display: none;
-			}
-			
-			/* Swap text only while actively pressing */
-			.btn-press-text:active .text-default {
-			  display: none;
-			}
-			
-			.btn-press-text:active .text-active {
-			  display: inline;
-			}
+<style>
+  .role-reveal-wrapper {
+    max-width: 420px;
+    margin: 2rem auto;
+  }
 
-		</style>
+  /* Dedicated box above the button so the thumb never covers the role */
+  .role-display {
+    min-height: 4.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.25);
+    margin-bottom: 1rem;
+  }
+
+  .role-display .role-revealed {
+    display: none;
+  }
+
+  /* When the wrapper (or button inside it) is actively held down */
+  .role-reveal-wrapper:has(.btn-hold-reveal:active) .role-hidden {
+    display: none;
+  }
+  .role-reveal-wrapper:has(.btn-hold-reveal:active) .role-revealed {
+    display: inline;
+  }
+
+  /* Thumb-sized button + prevent mobile long-press context menu/text selection */
+  .btn-hold-reveal {
+    min-height: 72px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  .btn-hold-reveal:active {
+    transform: scale(0.98);
+  }
+</style>
 {% end %}
 
 {% block body_attrs %}onload="get_whoami(); start_timers()"{% end %}
@@ -42,12 +53,18 @@
 {% block content %}
 	<h1 class="display-1 text-light" id="users_name">Name</h1>
 	<h1 class="display-3 text-light" id="users_score">123</h1>
-	<button type="button" class="btn btn-primary btn-press-text">
-	  <span class="text-default">Click & Hold to see your role</span>
-	  {% if is_traitor %}
-	    <span class="text-active">Traitor</span>
-	  {% else %}
-	    <span class="text-active">Faithful</span>
-	  {% end %}
-	</button>
+	<div class="role-reveal-wrapper px-3">
+	  <div class="role-display">
+	    <span class="role-hidden text-white-50 fs-4">Role Hidden</span>
+	    {% if is_traitor %}
+	      <span class="role-revealed display-5 fw-bold text-danger">Traitor</span>
+	    {% else %}
+	      <span class="role-revealed display-5 fw-bold text-info">Faithful</span>
+	    {% end %}
+	  </div>
+	
+	  <button type="button" class="btn btn-primary w-100 btn-hold-reveal" oncontextmenu="return false;">
+	    Press &amp; Hold to Reveal Role
+	  </button>
+	</div>
 {% end %}
