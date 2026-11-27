@@ -33,8 +33,9 @@ def load_mysql_creds():
 def make_app():
     cookiesecret = load_cookie_creds()
     settings = {
-            "login_url": "/login",
-            "cookie_secret": cookiesecret
+            "login_url": "/",
+            "cookie_secret": cookiesecret,
+            "template_path": os.path.join(os.path.dirname(__file__),"templates"),
             }
     return tornado.web.Application([
         (r"/(favicon\.ico)",tornado.web.StaticFileHandler,{"path": os.path.join(os.path.dirname(__file__),"static","images"), "default_filename": "favicon.ico"}),
@@ -42,6 +43,7 @@ def make_app():
         (r"/login", LoginHandler),
         (r"/scorer", ScorerHandler),
         (r"/scoreboard", ScoreboardHandler),
+        (r"/schedule", ScheduleHandler),
         (r"/scores", ScoresHandler),
         (r"/manage", ManagePageHandler),
         (r"/user", UserPageHandler),
@@ -87,11 +89,31 @@ def get_scores():
             "banish": -100,
             }
 
-class BaseHandler(tornado.web.RequestHandler):
+class PageHandler(tornado.web.RequestHandler):
+    @property
+    def is_traitor(self):
+        user_cookie = self.get_signed_cookie("user").decode("utf-8")
+        uuid_cookie = self.get_signed_cookie("uuid").decode("utf-8")
+        if not user_cookie or not uuid_cookie:
+            return False
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE role='traitor' AND name='{0}' AND uid='{1}'".format(user_cookie, uuid_cookie))
+        if len(cursor.fetchall()) == 1:
+            return True
+        return False
+
+    def get_template_namespace(self):
+        namespace = super().get_template_namespace()
+        namespace["is_traitor"] = self.is_traitor
+        return namespace
+
+class BaseHandler(PageHandler):
     def get_current_user(self):
         return self.get_signed_cookie("uuid") and self.get_signed_cookie("user")
 
-class AdminHandler(tornado.web.RequestHandler):
+class AdminHandler(PageHandler):
     def get_current_user(self):
         if not self.get_signed_cookie("uuid") or not self.get_signed_cookie("user"):
             return False
@@ -106,28 +128,19 @@ class AdminHandler(tornado.web.RequestHandler):
             self.redirect("/")
         return False
 
-class TraitorHandler(tornado.web.RequestHandler):
+class TraitorHandler(PageHandler):
     def get_current_user(self):
         if not self.get_signed_cookie("uuid") or not self.get_signed_cookie("user"):
             return False
-        valid = False
-        user,password = load_mysql_creds()
-        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
-        cursor = conn.cursor()
-        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE role='traitor' AND name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
-        if len(cursor.fetchall()) == 1:
-            return True
-        elif self.get_signed_cookie("uuid") and self.get_signed_cookie("user"):
-            self.redirect("/")
-        return False
+        return self.is_traitor
 
 class IndexHandler(BaseHandler):
     def get(self):
-        self.render("static/html/index.html")
+        self.render("index.html")
 
 class LoginHandler(BaseHandler):
     def get(self, creds=None):
-        self.render("static/html/login.html")
+        self.render("login.html")
     
     def post(self):
         uuid_str = str(uuid.uuid4())
@@ -161,7 +174,11 @@ class ScoresHandler(BaseHandler):
 
 class ScoreboardHandler(BaseHandler):
     def get(self):
-        self.render("static/html/scoreboard.html")
+        self.render("scoreboard.html")
+
+class ScheduleHandler(BaseHandler):
+    def get(self):
+        self.render("schedule.html")
 
 class UsersHandler(AdminHandler):
     @tornado.web.authenticated
@@ -267,17 +284,17 @@ class MajorActionHandler(AdminHandler):
 class ManagePageHandler(AdminHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("static/html/manage.html")
+        self.render("manage.html")
 
 class UserPageHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("static/html/user.html")
+        self.render("user.html")
 
 class BanishPageHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("static/html/banish.html")
+        self.render("banish.html")
 
 class BanishHandler(BaseHandler):
     @tornado.web.authenticated
@@ -287,7 +304,7 @@ class BanishHandler(BaseHandler):
 class MurderPageHandler(TraitorHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("static/html/murder.html")
+        self.render("murder.html")
 
 class MurderHandler(TraitorHandler):
     @tornado.web.authenticated
@@ -297,7 +314,7 @@ class MurderHandler(TraitorHandler):
 class RulesHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("static/html/rules.html")
+        self.render("rules.html")
 
 class ThresholdHandler(BaseHandler):
     def get(self):

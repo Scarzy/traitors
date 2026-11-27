@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="/js/user.js"></script>
+		<style>
+			/* Keep default look on hover and focus */
+			.btn-press-only:hover,
+			.btn-press-only:focus,
+			.btn-press-only:focus-visible {
+			  background-color: var(--bs-btn-bg);
+			  border-color: var(--bs-btn-border-color);
+			  color: var(--bs-btn-color);
+			  box-shadow: none;
+			}
+			
+			/* Change only while actively pressing down */
+			.btn-press-only:active {
+			  background-color: var(--bs-danger);
+			  border-color: var(--bs-danger);
+			  color: var(--bs-white);
+			  transform: scale(0.98);
+			}
+			/* Hide active text by default */
+			.btn-press-text .text-active {
+			  display: none;
+			}
+			
+			/* Swap text only while actively pressing */
+			.btn-press-text:active .text-default {
+			  display: none;
+			}
+			
+			.btn-press-text:active .text-active {
+			  display: inline;
+			}
+
+		</style>
+{% end %}
+
+{% block body_attrs %}onload="get_whoami(); start_timers()"{% end %}
+
+{% block content %}
+	<h1 class="display-1 text-light" id="users_name">Name</h1>
+	<h1 class="display-3 text-light" id="users_score">123</h1>
+	<button type="button" class="btn btn-primary btn-press-text">
+	  <span class="text-default">Click & Hold to see your role</span>
+	  {% if is_traitor %}
+	    <span class="text-active">Traitor</span>
+	  {% else %}
+	    <span class="text-active">Faithful</span>
+	  {% end %}
+	</button>
+{% end %}

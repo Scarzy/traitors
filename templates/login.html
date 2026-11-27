@@ -1,15 +1,14 @@
-<html>
-	<head>
-		<link href="/css/login.css" rel="stylesheet">
-		<link href="/css/bootstrap.min.css" rel="stylesheet">
-		<script src="/js/bootstrap.bundle.min.js"></script>
+{% extends "base.html" %}
 
-	</head>
-	<body class="text-center" style="background-color:#4f0518">
-		<main class="form-signin">
-			<div id="navbar-placeholder"></div>
+{% block head %}
+{% end %}
+
+{% block body_attrs %}{% end %}
+
+{% block content %}
+	<div class="row justify-content-center">
+		<div class="col-12 col-md-8 col-lg-5">
 			<form action="/login" method="post">
-				<img class="mb-4" src="/images/logo_transparent.png" alt="" width="200">
 				<h1 class="h3 mb-3 fw-normal text-light">Please sign in</h1>
 				
 				<div class="form-floating">
@@ -28,7 +27,6 @@
 				<button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
 				<p class="mt-5 mb-3 text-muted">&copy; 2026</p>
 			</form>
-		</main>
-
-	</body>
-</html>
+		</div>
+	</div>
+{% end %}

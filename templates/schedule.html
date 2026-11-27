@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block head %}
+	<script src="/js/scoreboard.js"></script>
+
+{% end %}
+
+{% block body_attrs %}onload="get_scores(); get_thresholds(); start_timers()"{% end %}
+
+{% block content %}
+      <div class="table-responsive">
+        <table class="table table-striped table-sm text-light">
+          <thead>
+            <tr>
+              <th scope="col">Start</th>
+              <th scope="col">End</th>
+              <th scope="col">Activity</th>
+            </tr>
+          </thead>
+          <tbody id="scheduletable">
+          </tbody>
+        </table>
+      </div>
+{% end %}
