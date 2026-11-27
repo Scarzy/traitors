@@ -1,0 +1,86 @@
+<html>
+	<head>
+		<link href="/css/bootstrap.min.css" rel="stylesheet">
+		<script src="/js/bootstrap.bundle.min.js"></script>
+		<script src="/js/navbar.js"></script>
+		<style>
+			.border-gold {background-color: #FFD700 !important;}
+			.border-silver {background-color: #C0C0C0 !important;}
+			.border-bronze {background-color: #CD7F32 !important;}
+			/* Keep default look on hover and focus */
+			.btn-press-only:hover,
+			.btn-press-only:focus,
+			.btn-press-only:focus-visible {
+			  background-color: var(--bs-btn-bg);
+			  border-color: var(--bs-btn-border-color);
+			  color: var(--bs-btn-color);
+			  box-shadow: none;
+			}
+			
+			/* Change only while actively pressing down */
+			.btn-press-only:active {
+			  background-color: var(--bs-danger);
+			  border-color: var(--bs-danger);
+			  color: var(--bs-white);
+			  transform: scale(0.98);
+			}
+			/* Hide active text by default */
+			.btn-press-text .text-active {
+			  display: none;
+			}
+			
+			/* Swap text only while actively pressing */
+			.btn-press-text:active .text-default {
+			  display: none;
+			}
+			
+			.btn-press-text:active .text-active {
+			  display: inline;
+			}
+
+		</style>
+		<style>
+			.list-group-item.my-custom-bg {
+			  background-color: #4f0518;
+			  color: #f8f9fa !important;
+			  border-color: #4f0518;
+			}
+		</style>
+	</head>
+	<body class="text-center" onload="get_scores()" style="background-color:#4f0518">
+		<main class="
+			container-fluid
+			py-5
+			">
+			<div id="navbar-placeholder"></div>
+			<div class="row justify-content-center">
+				<div class="col-12 col-md-8 col-lg-5">
+					<img class="mb-4" src="/images/logo_transparent.png" alt="" width="200">
+					<h1 class="text-light">Rules</h1>
+					<ul class="list-group list-group-flush" style="background-color:#4f0518">
+						<li class="list-group-item my-custom-bg">• You must never reveal your identity or give someone your phone</li>
+						<li class="list-group-item my-custom-bg">• If you delete cookies you will permanently lose access to your user and have to start again</li>
+						<li class="list-group-item my-custom-bg">• A round lasts 1 hour.</li>
+						<li class="list-group-item my-custom-bg">• During each hour you should vote to banish a player.</li>
+						<li class="list-group-item my-custom-bg">• During each hour traitors should vote to murder or recruit a player.</li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+						<li class="list-group-item my-custom-bg">• </li>
+					</ul>
+				</div>
+			</div>
+
+		</main>
+	</body>
+</html>
