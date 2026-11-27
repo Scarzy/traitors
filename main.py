@@ -104,33 +104,44 @@ class PageHandler(tornado.web.RequestHandler):
             return True
         return False
 
+    @property
+    def is_admin(self):
+        user_cookie = self.get_signed_cookie("user")
+        uuid_cookie = self.get_signed_cookie("uuid")
+        if not user_cookie or not uuid_cookie:
+            return False
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE admin=TRUE AND name='{0}' AND uid='{1}'".format(user_cookie.decode("utf-8"), uuid_cookie.decode("utf-8")))
+        if len(cursor.fetchall()) == 1:
+            return True
+        return False
+
+    @property
+    def is_logged_in(self):
+        return self.get_signed_cookie("uuid") and self.get_signed_cookie("user")
+
     def get_template_namespace(self):
         namespace = super().get_template_namespace()
         namespace["is_traitor"] = self.is_traitor
+        namespace["is_logged_in"] = self.is_logged_in
+        namespace["is_admin"] = self.is_admin
         return namespace
 
 class BaseHandler(PageHandler):
     def get_current_user(self):
-        return self.get_signed_cookie("uuid") and self.get_signed_cookie("user")
+        return self.is_logged_in
 
 class AdminHandler(PageHandler):
     def get_current_user(self):
-        if not self.get_signed_cookie("uuid") or not self.get_signed_cookie("user"):
+        if not self.is_logged_in:
             return False
-        valid = False
-        user,password = load_mysql_creds()
-        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
-        cursor = conn.cursor()
-        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE admin=TRUE AND name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
-        if len(cursor.fetchall()) == 1:
-            return True
-        elif self.get_signed_cookie("uuid") and self.get_signed_cookie("user"):
-            self.redirect("/")
-        return False
+        return self.is_admin
 
 class TraitorHandler(PageHandler):
     def get_current_user(self):
-        if not self.get_signed_cookie("uuid") or not self.get_signed_cookie("user"):
+        if not self.is_logged_in:
             return False
         return self.is_traitor
 

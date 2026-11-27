@@ -16,6 +16,7 @@
 
           <div class="collapse navbar-collapse" id="navbarsExample01">
             <ul class="navbar-nav me-auto mb-2">
+            {% if is_logged_in %}
               <li class="nav-item">
                 <a class="nav-link {% if request.path == '/user' %}active{% end %}" href="/user">Home</a>
               </li>
@@ -29,6 +30,12 @@
 		      <a class="nav-link disabled {% if request.path == '/murder' %}active{% end %}" id="murderoption" href="/murderpage" tabindex="-1" aria-disabled="true">Murder</a>
 		  {% end %}
               </li>
+              {% if is_admin %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.path == '/manage' %}active{% end %}" id="manageoption" href="/manage">Manage</a>
+              </li>
+	      {% end %}
+	      {% end %}
               <li class="nav-item">
                 <a class="nav-link {% if request.path == '/rules' %}active{% end %}" id="rulesoption" href="/rules">Rules</a>
               </li>
@@ -39,9 +46,6 @@
                 <a class="nav-link {% if request.path == '/schedule' %}active{% end %}" id="scheduleoption" href="/schedule">Schedule</a>
               </li>
             </ul>
-            <form>
-              <input class="form-control" type="text" placeholder="Search" aria-label="Search">
-            </form>
           </div>
         </div>
       </nav>
