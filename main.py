@@ -341,7 +341,6 @@ class MurderHandler(TraitorHandler):
         self.render("static/html/murder.html")
 
 class RulesHandler(BaseHandler):
-    @tornado.web.authenticated
     def get(self):
         self.render("rules.html")
 
