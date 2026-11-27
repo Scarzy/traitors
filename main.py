@@ -52,7 +52,11 @@ def make_app():
         (r"/majoraction", MajorActionHandler),
         (r"/thresholds", ThresholdHandler),
         (r"/votingtime", VotingTimeHandler),
-        (r"/banish", BanishPageHandler),
+        (r"/banishpage", BanishPageHandler),
+        (r"/banish", BanishHandler),
+        (r"/murderpage", MurderPageHandler),
+        (r"/murder", MurderHandler),
+        (r"/rules", RulesHandler),
         (r'/(.*\..*)', tornado.web.StaticFileHandler, {'path': "static"}),
         ],
         **settings)
@@ -96,6 +100,21 @@ class AdminHandler(tornado.web.RequestHandler):
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
         cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE admin=TRUE AND name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
+        if len(cursor.fetchall()) == 1:
+            return True
+        elif self.get_signed_cookie("uuid") and self.get_signed_cookie("user"):
+            self.redirect("/")
+        return False
+
+class TraitorHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        if not self.get_signed_cookie("uuid") or not self.get_signed_cookie("user"):
+            return False
+        valid = False
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name,uid FROM christmasawake2026 WHERE role='traitor' AND name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
         if len(cursor.fetchall()) == 1:
             return True
         elif self.get_signed_cookie("uuid") and self.get_signed_cookie("user"):
@@ -260,6 +279,26 @@ class BanishPageHandler(BaseHandler):
     def get(self):
         self.render("static/html/banish.html")
 
+class BanishHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("static/html/banish.html")
+
+class MurderPageHandler(TraitorHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("static/html/murder.html")
+
+class MurderHandler(TraitorHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("static/html/murder.html")
+
+class RulesHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("static/html/rules.html")
+
 class ThresholdHandler(BaseHandler):
     def get(self):
         data = get_count_thresholds()
@@ -273,9 +312,9 @@ class VotingTimeHandler(BaseHandler):
         cursor.execute("SELECT murdervotes,banishvotes FROM christmasawake2026 WHERE name='{0}' AND uid='{1}'".format(self.get_signed_cookie("user").decode("utf-8"),self.get_signed_cookie("uuid").decode("utf-8")))
         res = cursor.fetchall()
         if len(res) == 0:
-            res = (0, 0)
+            res = [(0, 0),]
         now = datetime.datetime.now().minute
-        return now >= 55 and now < 60 and (res[0] > 0 or res[1] > 0)
+        return now >= 55 and now < 60 and (res[0][0] > 0 or res[0][1] > 0)
     
     @tornado.web.authenticated
     def get(self):
