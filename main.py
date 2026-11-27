@@ -45,6 +45,8 @@ def make_app():
         (r"/scoreboard", ScoreboardHandler),
         (r"/schedule", ScheduleHandler),
         (r"/scores", ScoresHandler),
+        (r"/scores/([0-9]+)", ScoresHandler),
+        (r"/scoring", ScoringHandler),
         (r"/manage", ManagePageHandler),
         (r"/user", UserPageHandler),
         (r"/users", UsersHandler),
@@ -172,16 +174,27 @@ class ScorerHandler(BaseHandler):
     def get(self):
         self.render("static/html/index.html")
 
-class ScoresHandler(BaseHandler):
+class ScoresHandler(ScorerHandler):
     def get(self):
         user,password = load_mysql_creds()
         conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
         cursor = conn.cursor()
-        cursor.execute("SELECT name,score FROM christmasawake2026 ORDER BY score DESC")
+        cursor.execute("SELECT id,name,score FROM christmasawake2026 ORDER BY score DESC")
         res = cursor.fetchall()
-        keys = ["name", "score"]
+        keys = ["id", "name", "score"]
         data = [dict(zip(keys, row)) for row in res]
         self.write(json.dumps(data))
+
+    @tornado.web.authenticated
+    def patch(self, slug):
+        score = tornado.escape.json_decode(self.request.body)["score"]
+        user,password = load_mysql_creds()
+        conn = mysql.connect(host="localhost", user=user, password=password, database="scouts")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE christmasawake2026 SET score = score + {1} WHERE id={0}".format(slug,score))
+        conn.commit()
+        self.write("{}")
+        return
 
 class ScoreboardHandler(BaseHandler):
     def get(self):
@@ -291,6 +304,11 @@ class MajorActionHandler(AdminHandler):
             case _:
                 self.set_status(400)
                 self.write("Action unknown")
+
+class ScoringHandler(ScorerHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("scoring.html")
 
 class ManagePageHandler(AdminHandler):
     @tornado.web.authenticated
